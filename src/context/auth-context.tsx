@@ -62,12 +62,22 @@ export function AuthProvider({
       const currentUser =
         session?.user ?? null
 
+      console.log(
+        "GET SESSION USER METADATA",
+        currentUser?.user_metadata
+      )
+
       setUser(currentUser)
 
       const currentRole =
         currentUser
           ?.user_metadata
           ?.role || null
+
+      console.log(
+        "GET SESSION ROLE",
+        currentRole
+      )
 
       setRole(currentRole)
 
@@ -86,6 +96,11 @@ export function AuthProvider({
             session?.user ??
             null
 
+          console.log(
+            "USER METADATA",
+            currentUser?.user_metadata
+          )
+
           setUser(
             currentUser
           )
@@ -94,6 +109,11 @@ export function AuthProvider({
             currentUser
               ?.user_metadata
               ?.role || null
+
+          console.log(
+            "AUTH STATE ROLE",
+            currentRole
+          )
 
           setRole(
             currentRole
