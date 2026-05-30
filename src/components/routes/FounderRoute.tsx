@@ -26,29 +26,23 @@ export default function FounderRoute({
   const router =
     useRouter()
 
-    useEffect(() => {
-      console.log("FounderRoute", {
-        email: user?.email,
-        role,
-        loading,
-      })
-    
-      if (loading) return
-    
-      if (!user) {
-        router.push("/login")
-        return
-      }
-    
-      if (role !== "founder") {
-        router.push("/discover")
-      }
-    }, [
-      user,
-      role,
-      loading,
-      router,
-    ])
+  useEffect(() => {
+    if (loading) return
+
+    if (!user) {
+      router.push("/login")
+      return
+    }
+
+    if (role !== "founder") {
+      router.push("/discover")
+    }
+  }, [
+    user,
+    role,
+    loading,
+    router,
+  ])
 
   if (
     loading ||

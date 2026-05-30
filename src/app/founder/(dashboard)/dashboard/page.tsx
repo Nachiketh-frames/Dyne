@@ -150,11 +150,6 @@ export default function FounderDashboardPage() {
       }
 
       if (!data) {
-        console.log(
-          "No startup found for founder:",
-          user.id
-        )
-      
         return
       }
 
@@ -238,9 +233,7 @@ setFounderFeed(
   )
 )
 
-      console.log(
-        investmentData
-      )
+      
 
       setLoading(false)
     }
