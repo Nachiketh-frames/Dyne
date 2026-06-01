@@ -31,12 +31,12 @@ export default function InvestorRoute({
 
     if (!user) {
       router.push("/login")
-
       return
     }
 
     if (
-      role !== "investor"
+      role !== "investor" &&
+      role !== "admin"
     ) {
       router.push(
         "/founder/dashboard"
@@ -52,7 +52,10 @@ export default function InvestorRoute({
   if (
     loading ||
     !user ||
-    role !== "investor"
+    (
+      role !== "investor" &&
+      role !== "admin"
+    )
   ) {
     return null
   }

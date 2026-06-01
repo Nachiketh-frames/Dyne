@@ -132,7 +132,7 @@ export default function FounderDashboardPage() {
             "user_id",
             user.id
           )
-          .single()
+          .maybeSingle()
 
       if (data) {
         setMetrics(data)
@@ -150,6 +150,7 @@ export default function FounderDashboardPage() {
       }
 
       if (!data) {
+        setLoading(false)
         return
       }
 
