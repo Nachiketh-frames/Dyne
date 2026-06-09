@@ -26,18 +26,15 @@ import {
 } from "recharts"
 
 type StartupMetrics = {
+  id: string
+
   startup_name: string
 
   monthly_revenue: number
-
   monthly_expenses: number
-
   cash_balance: number
-
   total_debt: number
-
   monthly_growth: number
-
   active_customers: number
 }
 
@@ -54,6 +51,16 @@ export default function TreasuryPage() {
   const [loading,
     setLoading] =
     useState(true)
+
+    const [showModal,
+      setShowModal] =
+      useState(false)
+    
+    const [editMetrics,
+      setEditMetrics] =
+      useState<StartupMetrics | null>(
+        null
+      )
 
   useEffect(() => {
     async function fetchMetrics() {
@@ -81,10 +88,80 @@ export default function TreasuryPage() {
     fetchMetrics()
   }, [user])
 
-  if (
-    loading ||
-    !metrics
-  ) {
+  async function updateTreasury() {
+    if (!user || !editMetrics) return
+
+    try {
+      const { error } = await supabase
+        .from("startup_metrics")
+        .update({
+          monthly_revenue: editMetrics.monthly_revenue,
+          monthly_expenses: editMetrics.monthly_expenses,
+          cash_balance: editMetrics.cash_balance,
+          total_debt: editMetrics.total_debt,
+          monthly_growth: editMetrics.monthly_growth,
+          active_customers: editMetrics.active_customers,
+        })
+        .eq("user_id", user.id)
+
+        if (error) {
+          console.error("UPDATE ERROR:", error)
+          throw error
+        }
+
+      const { error: snapshotError } =
+  await supabase
+    .from("analytics_snapshots")
+    .insert({
+      startup_id: metrics!.id,
+
+      monthly_revenue:
+        editMetrics.monthly_revenue,
+
+      monthly_expenses:
+        editMetrics.monthly_expenses,
+
+      cash_balance:
+        editMetrics.cash_balance,
+
+      total_debt:
+        editMetrics.total_debt,
+
+      monthly_growth:
+        editMetrics.monthly_growth,
+
+      active_customers:
+        editMetrics.active_customers,
+    })
+
+    if (snapshotError) {
+      throw snapshotError
+    }
+
+      const { data } = await supabase
+        .from("startup_metrics")
+        .select("*")
+        .eq("user_id", user.id)
+        .single()
+
+      if (data) {
+        setMetrics(data)
+      }
+
+      setShowModal(false)
+
+      alert("Treasury updated successfully.")
+    } catch (err) {
+      console.error(err)
+    
+      alert("Failed to update treasury.")
+    }
+    }
+    
+    if (
+      loading ||
+      !metrics
+    ) {
     return (
       <div className="min-h-screen flex items-center justify-center text-white">
         Loading Treasury...
@@ -177,6 +254,7 @@ export default function TreasuryPage() {
       ]
 
   return (
+    <>
     <div className="text-white">
       <div className="mb-10">
         <h1 className="text-4xl font-bold">
@@ -491,10 +569,22 @@ fill="#2962FF"
             </h2>
 
             <div className="space-y-4">
-              <ActionCard
-                title="Update Metrics"
-                action="Refresh Treasury"
-              />
+            <button
+  onClick={() => {
+    setEditMetrics(metrics)
+
+    setShowModal(true)
+  }}
+  className="bg-[#1A1F2B] hover:bg-[#222938] border border-[#2A2E39] rounded-2xl p-6 text-left transition w-full"
+>
+  <p className="text-sm text-[#8B949E] mb-3">
+    Update Metrics
+  </p>
+
+  <h3 className="text-2xl font-bold">
+    Refresh Treasury
+  </h3>
+</button>
 
               <ActionCard
                 title="Investor Report"
@@ -507,10 +597,159 @@ fill="#2962FF"
               />
             </div>
           </div>
-        </div>
+          </div>
       </div>
     </div>
-  )
+
+    {showModal &&
+      editMetrics && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+
+          <div className="bg-[#161B26] border border-[#2A2E39] rounded-3xl p-8 w-full max-w-2xl">
+
+            <h2 className="text-3xl font-bold mb-8">
+              Update Treasury
+            </h2>
+
+            <div className="grid grid-cols-2 gap-4">
+
+  <div>
+    <label className="block text-sm text-[#8B949E] mb-2">
+      Monthly Revenue
+    </label>
+
+    <input
+      type="number"
+      value={editMetrics.monthly_revenue}
+      onChange={(e) =>
+        setEditMetrics({
+          ...editMetrics,
+          monthly_revenue: Number(e.target.value),
+        })
+      }
+      className="w-full bg-[#0D1117] border border-[#2A2E39] rounded-xl p-4"
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm text-[#8B949E] mb-2">
+      Monthly Expenses
+    </label>
+
+    <input
+      type="number"
+      value={editMetrics.monthly_expenses}
+      onChange={(e) =>
+        setEditMetrics({
+          ...editMetrics,
+          monthly_expenses: Number(e.target.value),
+        })
+      }
+      className="w-full bg-[#0D1117] border border-[#2A2E39] rounded-xl p-4"
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm text-[#8B949E] mb-2">
+      Cash Balance
+    </label>
+
+    <input
+      type="number"
+      value={editMetrics.cash_balance}
+      onChange={(e) =>
+        setEditMetrics({
+          ...editMetrics,
+          cash_balance: Number(e.target.value),
+        })
+      }
+      className="w-full bg-[#0D1117] border border-[#2A2E39] rounded-xl p-4"
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm text-[#8B949E] mb-2">
+      Total Debt
+    </label>
+
+    <input
+      type="number"
+      value={editMetrics.total_debt}
+      onChange={(e) =>
+        setEditMetrics({
+          ...editMetrics,
+          total_debt: Number(e.target.value),
+        })
+      }
+      className="w-full bg-[#0D1117] border border-[#2A2E39] rounded-xl p-4"
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm text-[#8B949E] mb-2">
+      Monthly Growth (%)
+    </label>
+
+    <input
+      type="number"
+      step="0.1"
+      value={editMetrics.monthly_growth}
+      onChange={(e) =>
+        setEditMetrics({
+          ...editMetrics,
+          monthly_growth: Number(e.target.value),
+        })
+      }
+      className="w-full bg-[#0D1117] border border-[#2A2E39] rounded-xl p-4"
+    />
+  </div>
+
+  <div>
+    <label className="block text-sm text-[#8B949E] mb-2">
+      Active Customers
+    </label>
+
+    <input
+      type="number"
+      value={editMetrics.active_customers}
+      onChange={(e) =>
+        setEditMetrics({
+          ...editMetrics,
+          active_customers: Number(e.target.value),
+        })
+      }
+      className="w-full bg-[#0D1117] border border-[#2A2E39] rounded-xl p-4"
+    />
+  </div>
+
+</div>
+
+            <div className="flex gap-4 mt-8">
+
+              <button
+                onClick={() =>
+                  setShowModal(false)
+                }
+                className="flex-1 bg-[#1A1F2B] py-4 rounded-2xl"
+              >
+                Cancel
+              </button>
+
+              <button
+                onClick={updateTreasury}
+                className="flex-1 bg-[#2962FF] py-4 rounded-2xl"
+              >
+                Update Treasury
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+      )}
+  </>
+)
 }
 
 

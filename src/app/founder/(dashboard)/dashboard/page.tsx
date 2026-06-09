@@ -316,6 +316,33 @@ setFounderFeed(
             metricsId
           )
 
+          await supabase
+  .from(
+    "analytics_snapshots"
+  )
+  .insert({
+    startup_id:
+      metricsId,
+
+    monthly_revenue:
+      metrics.monthly_revenue,
+
+    monthly_expenses:
+      metrics.monthly_expenses,
+
+    cash_balance:
+      metrics.cash_balance,
+
+    total_debt:
+      metrics.total_debt,
+
+    monthly_growth:
+      metrics.monthly_growth,
+
+    active_customers:
+      metrics.active_customers,
+  })
+
       if (error) {
         setMessage(
           error.message
@@ -346,6 +373,33 @@ setFounderFeed(
         })
         .select()
         .single()
+
+        await supabase
+  .from(
+    "analytics_snapshots"
+  )
+  .insert({
+    startup_id:
+      data.id,
+
+    monthly_revenue:
+      metrics.monthly_revenue,
+
+    monthly_expenses:
+      metrics.monthly_expenses,
+
+    cash_balance:
+      metrics.cash_balance,
+
+    total_debt:
+      metrics.total_debt,
+
+    monthly_growth:
+      metrics.monthly_growth,
+
+    active_customers:
+      metrics.active_customers,
+  })
 
       if (error) {
         setMessage(

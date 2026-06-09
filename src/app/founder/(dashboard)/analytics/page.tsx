@@ -1,6 +1,205 @@
+
 "use client"
 
+import {
+  useEffect,
+  useState,
+} from "react"
+
+import { supabase } from "../../../../lib/supabase"
+import { useAuth } from "../../../../context/auth-context"
+
+import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+} from "recharts"
+
+type Investment = {
+  id: string
+  amount: number
+}
+
 export default function AnalyticsPage() {
+  const { user } = useAuth()
+
+  const [metrics, setMetrics] =
+    useState<any>(null)
+
+  const [
+    investments,
+    setInvestments,
+  ] = useState<Investment[]>([])
+
+  const [loading, setLoading] =
+    useState(true)
+
+  useEffect(() => {
+    async function fetchAnalytics() {
+      if (!user) return
+
+      const {
+        data: startup,
+      } = await supabase
+        .from("startup_metrics")
+        .select("*")
+        .eq(
+          "user_id",
+          user.id
+        )
+        .maybeSingle()
+
+      if (!startup) {
+        setLoading(false)
+        return
+      }
+
+      setMetrics(startup)
+
+      const {
+        data: investmentData,
+      } = await supabase
+        .from("investments")
+        .select("*")
+        .eq(
+          "startup_id",
+          startup.id
+        )
+
+      setInvestments(
+        investmentData || []
+      )
+
+      setLoading(false)
+    }
+
+    fetchAnalytics()
+  }, [user])
+
+  if (
+    loading ||
+    !metrics
+  ) {
+    return (
+      <div className="text-white">
+        Loading Analytics...
+      </div>
+    )
+  }
+
+  const totalRaised =
+    investments.reduce(
+      (
+        sum,
+        investment
+      ) =>
+        sum +
+        investment.amount,
+      0
+    )
+
+  const investorCount =
+    investments.length
+
+  const profitability =
+    metrics.monthly_revenue -
+    metrics.monthly_expenses
+
+  const burnRate =
+    profitability < 0
+      ? Math.abs(
+          profitability
+        )
+      : 0
+
+  const runwayMonths =
+    burnRate > 0
+      ? Math.floor(
+          metrics.cash_balance /
+            burnRate
+        )
+      : null
+
+  const chartData = [
+    {
+      name: "Revenue",
+      value:
+        metrics.monthly_revenue,
+    },
+    {
+      name: "Expenses",
+      value:
+        metrics.monthly_expenses,
+    },
+    {
+      name: "Cash",
+      value:
+        metrics.cash_balance,
+    },
+    {
+      name: "Debt",
+      value:
+        metrics.total_debt,
+    },
+  ]
+
+  const insights = []
+
+  if (
+    metrics.monthly_growth >
+    10
+  ) {
+    insights.push({
+      title:
+        "Strong Growth Momentum",
+
+      description:
+        `${metrics.monthly_growth}% monthly growth exceeds healthy startup benchmarks.`,
+    })
+  }
+
+  if (
+    investorCount > 0
+  ) {
+    insights.push({
+      title:
+        "Investor Validation",
+
+      description:
+        `${investorCount} investors have deployed capital into the startup.`,
+    })
+  }
+
+  if (
+    profitability > 0
+  ) {
+    insights.push({
+      title:
+        "Profitable Operations",
+
+      description:
+        `Monthly profitability currently stands at ₹${profitability.toLocaleString()}.`,
+    })
+  }
+
+  if (
+    metrics.cash_balance >
+    metrics.monthly_expenses *
+      12
+  ) {
+    insights.push({
+      title:
+        "Healthy Treasury Position",
+
+      description:
+        "Current treasury reserves can sustain operations for over 12 months.",
+    })
+  }
+
   return (
     <div className="text-white">
       <div className="mb-10">
@@ -9,31 +208,59 @@ export default function AnalyticsPage() {
         </h1>
 
         <p className="text-[#8B949E] mt-2">
-          Treasury intelligence and growth
-          performance monitoring
+          Live treasury intelligence and startup performance analytics
         </p>
       </div>
 
       <div className="grid grid-cols-4 gap-6 mb-8">
         <AnalyticsCard
-          title="Revenue Growth"
-          value="+18%"
+          title="Monthly Revenue"
+          value={`₹${metrics.monthly_revenue.toLocaleString()}`}
         />
 
         <AnalyticsCard
-          title="Runway Trend"
-          value="24 Months"
+          title="Growth Rate"
+          value={`${metrics.monthly_growth}%`}
         />
 
         <AnalyticsCard
-          title="Investor Activity"
-          value="High"
+          title="Capital Raised"
+          value={`₹${totalRaised.toLocaleString()}`}
         />
 
         <AnalyticsCard
-          title="Treasury Health"
-          value="Stable"
+          title="Investors"
+          value={`${investorCount}`}
         />
+      </div>
+
+      <div className="bg-[#161B26] border border-[#2A2E39] rounded-3xl p-8 mb-8">
+        <h2 className="text-3xl font-bold mb-8">
+          Financial Overview
+        </h2>
+
+        <ResponsiveContainer
+          width="100%"
+          height={350}
+        >
+          <BarChart
+            data={chartData}
+          >
+            <CartesianGrid strokeDasharray="3 3" />
+
+            <XAxis
+              dataKey="name"
+            />
+
+            <YAxis />
+
+            <Tooltip />
+
+            <Bar
+              dataKey="value"
+            />
+          </BarChart>
+        </ResponsiveContainer>
       </div>
 
       <div className="grid grid-cols-3 gap-6">
@@ -45,8 +272,7 @@ export default function AnalyticsPage() {
               </h2>
 
               <p className="text-[#8B949E] mt-2">
-                Startup operational and
-                financial trajectory analysis
+                Real-time startup performance insights
               </p>
             </div>
 
@@ -56,20 +282,22 @@ export default function AnalyticsPage() {
           </div>
 
           <div className="space-y-5">
-            <InsightCard
-              title="Revenue trajectory exceeded quarterly expectations"
-              description="Startup growth momentum continues strengthening across investor activity and treasury stability."
-            />
-
-            <InsightCard
-              title="Investor engagement increased by 32%"
-              description="Community interaction and treasury update engagement expanded significantly."
-            />
-
-            <InsightCard
-              title="Operational burn optimization successful"
-              description="Treasury efficiency improvements extended runway and reduced exposure risk."
-            />
+            {insights.map(
+              (
+                insight,
+                index
+              ) => (
+                <InsightCard
+                  key={index}
+                  title={
+                    insight.title
+                  }
+                  description={
+                    insight.description
+                  }
+                />
+              )
+            )}
           </div>
         </div>
 
@@ -80,32 +308,38 @@ export default function AnalyticsPage() {
 
           <div className="space-y-6">
             <AnalyticsRow
-              label="Growth Momentum"
-              value="Strong"
+              label="Customers"
+              value={`${metrics.active_customers}`}
             />
 
             <AnalyticsRow
-              label="Investor Confidence"
-              value="High"
+              label="Funding Stage"
+              value={
+                metrics.funding_stage ||
+                "Unknown"
+              }
             />
 
             <AnalyticsRow
-              label="Treasury Exposure"
-              value="Low"
+              label="Debt"
+              value={`₹${metrics.total_debt.toLocaleString()}`}
             />
 
             <AnalyticsRow
-              label="Community Activity"
-              value="Active"
+              label="Runway"
+              value={
+                runwayMonths
+                  ? `${runwayMonths} Months`
+                  : "Profitable"
+              }
             />
           </div>
 
           <div className="mt-10 bg-[#0D1117] border border-[#2A2E39] rounded-2xl p-5">
             <p className="text-[#8B949E] leading-relaxed">
-              DYNE continuously evaluates
-              startup performance, treasury
-              resilience, investor sentiment,
-              and operational growth signals.
+              DYNE continuously evaluates treasury health,
+              startup growth, investor participation,
+              and operational resilience.
             </p>
           </div>
         </div>
@@ -173,3 +407,4 @@ function AnalyticsRow({
     </div>
   )
 }
+
