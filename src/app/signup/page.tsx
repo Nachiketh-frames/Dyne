@@ -8,6 +8,8 @@ import { useRouter } from "next/navigation"
 
 import { supabase } from "../../lib/supabase"
 
+import { createInvestorWallet } from "../../lib/wallet"
+
 export default function SignupPage() {
   const router = useRouter()
 
@@ -35,7 +37,7 @@ export default function SignupPage() {
 
     setError("")
 
-    const { error } =
+    const { data, error } =
       await supabase.auth.signUp({
         email,
         password,
@@ -50,6 +52,45 @@ export default function SignupPage() {
 
     if (error) {
       setError(error.message)
+
+      setLoading(false)
+
+      return
+    }
+
+    const investorId =
+      data.user?.id
+
+    if (!investorId) {
+      setError(
+        "Account created, but wallet setup could not identify the investor."
+      )
+
+      setLoading(false)
+
+      return
+    }
+
+    try {
+      await createInvestorWallet(
+        investorId
+      )
+    } catch (walletError) {
+      const message =
+        walletError instanceof Error
+          ? walletError.message
+          : typeof walletError ===
+              "object" &&
+            walletError !== null &&
+            "message" in walletError
+          ? String(
+              walletError.message
+            )
+          : "Unknown wallet setup error"
+
+      setError(
+        `Account created, but wallet setup failed: ${message}`
+      )
 
       setLoading(false)
 
